@@ -1,7 +1,7 @@
 import axios from "axios";
 import { tokenStorage } from "./auth-storage";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
 
 export const http = axios.create({
   baseURL: API_URL,
@@ -42,17 +42,31 @@ http.interceptors.response.use(
 
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: unknown } | undefined;
-    const message = data?.message;
+    const data = error.response?.data;
 
-    if (Array.isArray(message)) {
-      return message.join(", ");
+    if (data && typeof data === "object") {
+      const { message, error: errorText } = data as {
+        message?: unknown;
+        error?: unknown;
+      };
+
+      if (Array.isArray(message)) {
+        return message.join(", ");
+      }
+
+      if (typeof message === "string" && message.length > 0) {
+        return message;
+      }
+
+      if (typeof errorText === "string") {
+        return errorText;
+      }
     }
 
-    if (typeof message === "string") {
-      return message;
-    }
+    return error.message;
+  }
 
+  if (error instanceof Error && error.message) {
     return error.message;
   }
 

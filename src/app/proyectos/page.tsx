@@ -3,13 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, LogOut, FolderOpen } from "lucide-react";
+import { Plus, LogOut, FolderOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { CreateProjectPayload, Project, projectsApi } from "@/lib/projects";
+import { Project, projectsApi } from "@/lib/projects";
 import { getErrorMessage } from "@/lib/http";
-import { ESTADOS, ProjectValues, projectSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,41 +15,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FormField } from "@/components/ui/form-field";
-import { LoadingButton } from "@/components/ui/loading-button";
-
-const emptyForm: ProjectValues = {
-  nombre: "",
-  fechaInicio: "",
-  estado: "Planificado",
-  responsable: "",
-  monto: "",
-};
+import { ProyectosTable } from "@/components/tables/proyectos-table";
+import { ProyectoDialog } from "@/components/modals/proyecto-dialog";
+import { ConfirmDialog } from "@/components/modals/confirm-dialog";
 
 export default function ProyectosPage() {
   const router = useRouter();
@@ -66,18 +32,6 @@ export default function ProyectosPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ProjectValues>({
-    resolver: zodResolver(projectSchema),
-    mode: "onTouched",
-    defaultValues: emptyForm,
-  });
 
   const loadProjects = useCallback(async () => {
     if (!token) return;
@@ -106,51 +60,12 @@ export default function ProyectosPage() {
 
   function openCreateDialog() {
     setEditingProject(null);
-    reset(emptyForm);
-    setError(null);
     setDialogOpen(true);
   }
 
   function openEditDialog(project: Project) {
     setEditingProject(project);
-    reset({
-      nombre: project.nombre,
-      fechaInicio: project.fechaInicio.slice(0, 10),
-      estado: project.estado as ProjectValues["estado"],
-      responsable: project.responsable,
-      monto: String(project.monto),
-    });
-    setError(null);
     setDialogOpen(true);
-  }
-
-  async function onSubmit(values: ProjectValues) {
-    if (!token) return;
-    setError(null);
-
-    const payload: CreateProjectPayload = {
-      nombre: values.nombre,
-      fechaInicio: new Date(values.fechaInicio).toISOString(),
-      estado: values.estado,
-      responsable: values.responsable,
-      monto: Number(values.monto),
-    };
-
-    try {
-      if (editingProject) {
-        await projectsApi.update(editingProject.id, payload);
-        toast.success("Proyecto actualizado");
-      } else {
-        await projectsApi.create(payload);
-        toast.success("Proyecto creado");
-      }
-      setDialogOpen(false);
-      loadProjects();
-    } catch (err) {
-      const message = getErrorMessage(err);
-      setError(message);
-      toast.error(message);
-    }
   }
 
   async function handleDelete() {
@@ -164,8 +79,7 @@ export default function ProyectosPage() {
       setPendingDelete(null);
       loadProjects();
     } catch (err) {
-      const message = getErrorMessage(err);
-      toast.error(message);
+      toast.error(getErrorMessage(err));
     } finally {
       setDeleting(false);
     }
@@ -251,203 +165,35 @@ export default function ProyectosPage() {
                 No hay proyectos registrados. Crea uno para comenzar.
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Fecha inicio</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Responsable</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                    <TableHead className="w-24 text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell className="font-medium">
-                        {project.nombre}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(project.fechaInicio).toLocaleDateString(
-                          "es-CL",
-                        )}
-                      </TableCell>
-                      <TableCell>{project.estado}</TableCell>
-                      <TableCell>{project.responsable}</TableCell>
-                      <TableCell className="text-right">
-                        {project.monto.toLocaleString("es-CL", {
-                          style: "currency",
-                          currency: "CLP",
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Editar ${project.nombre}`}
-                            onClick={() => openEditDialog(project)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Eliminar ${project.nombre}`}
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setPendingDelete(project)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ProyectosTable
+                projects={projects}
+                onEdit={openEditDialog}
+                onDelete={setPendingDelete}
+              />
             )}
           </CardContent>
         </Card>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingProject ? "Editar proyecto" : "Nuevo proyecto"}
-            </DialogTitle>
-            <DialogDescription>
-              Completa los datos del proyecto
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-4">
-              <FormField id="nombre" label="Nombre" error={errors.nombre?.message}>
-                <Input
-                  id="nombre"
-                  placeholder="Nombre del proyecto"
-                  aria-invalid={errors.nombre ? true : undefined}
-                  {...register("nombre")}
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  id="fechaInicio"
-                  label="Fecha de inicio"
-                  error={errors.fechaInicio?.message}
-                >
-                  <Input
-                    id="fechaInicio"
-                    type="date"
-                    aria-invalid={errors.fechaInicio ? true : undefined}
-                    {...register("fechaInicio")}
-                  />
-                </FormField>
-                <FormField id="estado" label="Estado">
-                  <Controller
-                    control={control}
-                    name="estado"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ESTADOS.map((estado) => (
-                            <SelectItem key={estado} value={estado}>
-                              {estado}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  id="responsable"
-                  label="Responsable"
-                  error={errors.responsable?.message}
-                >
-                  <Input
-                    id="responsable"
-                    placeholder="Nombre del responsable"
-                    aria-invalid={errors.responsable ? true : undefined}
-                    {...register("responsable")}
-                  />
-                </FormField>
-                <FormField id="monto" label="Monto" error={errors.monto?.message}>
-                  <Input
-                    id="monto"
-                    inputMode="decimal"
-                    placeholder="0"
-                    aria-invalid={errors.monto ? true : undefined}
-                    {...register("monto")}
-                  />
-                </FormField>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <LoadingButton
-                loading={isSubmitting}
-                loadingText="Guardando..."
-              >
-                {editingProject ? "Actualizar" : "Crear"}
-              </LoadingButton>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ProyectoDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        project={editingProject}
+        onSuccess={loadProjects}
+      />
 
-      <Dialog
+      <ConfirmDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar proyecto?</DialogTitle>
-            <DialogDescription>
-              Esta acción no se puede deshacer. Estás por eliminar el proyecto{" "}
-              <span className="font-medium text-foreground">
-                {pendingDelete?.nombre}
-              </span>
-              .
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPendingDelete(null)}
-              disabled={deleting}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Eliminando..." : "Eliminar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="¿Eliminar proyecto?"
+        description="Esta acción no se puede deshacer. Estás por eliminar el proyecto"
+        emphasis={pendingDelete?.nombre}
+        confirmLabel="Eliminar"
+        loadingText="Eliminando..."
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }
