@@ -3,14 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Pencil, Trash2, LogOut, FolderOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import {
-  ApiError,
-  CreateProjectPayload,
-  Project,
-  projectsApi,
-} from "@/lib/api";
+import { ApiError, CreateProjectPayload, Project, projectsApi } from "@/lib/api";
+import { ESTADOS, ProjectValues, projectSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,9 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const ESTADOS = ["Planificado", "En progreso", "En revisión", "Finalizado"];
-
-const emptyForm = {
+const emptyForm: ProjectValues = {
   nombre: "",
   fechaInicio: "",
   estado: "Planificado",
@@ -66,10 +62,20 @@ export default function ProyectosPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProjectValues>({
+    resolver: zodResolver(projectSchema),
+    mode: "onTouched",
+    defaultValues: emptyForm,
+  });
 
   const loadProjects = useCallback(async () => {
     if (!token) return;
@@ -100,35 +106,34 @@ export default function ProyectosPage() {
 
   function openCreateDialog() {
     setEditingProject(null);
-    setForm(emptyForm);
+    reset(emptyForm);
+    setError(null);
     setDialogOpen(true);
   }
 
   function openEditDialog(project: Project) {
     setEditingProject(project);
-    setForm({
+    reset({
       nombre: project.nombre,
       fechaInicio: project.fechaInicio.slice(0, 10),
-      estado: project.estado,
+      estado: project.estado as ProjectValues["estado"],
       responsable: project.responsable,
       monto: String(project.monto),
     });
+    setError(null);
     setDialogOpen(true);
   }
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function onSubmit(values: ProjectValues) {
     if (!token) return;
-
-    setSaving(true);
     setError(null);
 
     const payload: CreateProjectPayload = {
-      nombre: form.nombre,
-      fechaInicio: new Date(form.fechaInicio).toISOString(),
-      estado: form.estado,
-      responsable: form.responsable,
-      monto: Number(form.monto),
+      nombre: values.nombre,
+      fechaInicio: new Date(values.fechaInicio).toISOString(),
+      estado: values.estado,
+      responsable: values.responsable,
+      monto: Number(values.monto),
     };
 
     try {
@@ -146,8 +151,6 @@ export default function ProyectosPage() {
         err instanceof ApiError ? err.message : "Error al guardar el proyecto";
       setError(message);
       toast.error(message);
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -320,7 +323,7 @@ export default function ProyectosPage() {
               Completa los datos del proyecto
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -330,13 +333,15 @@ export default function ProyectosPage() {
               <Label htmlFor="nombre">Nombre</Label>
               <Input
                 id="nombre"
-                value={form.nombre}
-                onChange={(e) =>
-                  setForm({ ...form, nombre: e.target.value })
-                }
                 placeholder="Nombre del proyecto"
-                required
+                aria-invalid={errors.nombre ? true : undefined}
+                {...register("nombre")}
               />
+              {errors.nombre && (
+                <p className="text-sm font-medium text-destructive">
+                  {errors.nombre.message}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -344,32 +349,35 @@ export default function ProyectosPage() {
                 <Input
                   id="fechaInicio"
                   type="date"
-                  value={form.fechaInicio}
-                  onChange={(e) =>
-                    setForm({ ...form, fechaInicio: e.target.value })
-                  }
-                  required
+                  aria-invalid={errors.fechaInicio ? true : undefined}
+                  {...register("fechaInicio")}
                 />
+                {errors.fechaInicio && (
+                  <p className="text-sm font-medium text-destructive">
+                    {errors.fechaInicio.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Estado</Label>
-                <Select
-                  value={form.estado}
-                  onValueChange={(value) =>
-                    setForm({ ...form, estado: value ?? "Planificado" })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ESTADOS.map((estado) => (
-                      <SelectItem key={estado} value={estado}>
-                        {estado}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="estado"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ESTADOS.map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -377,26 +385,30 @@ export default function ProyectosPage() {
                 <Label htmlFor="responsable">Responsable</Label>
                 <Input
                   id="responsable"
-                  value={form.responsable}
-                  onChange={(e) =>
-                    setForm({ ...form, responsable: e.target.value })
-                  }
                   placeholder="Nombre del responsable"
-                  required
+                  aria-invalid={errors.responsable ? true : undefined}
+                  {...register("responsable")}
                 />
+                {errors.responsable && (
+                  <p className="text-sm font-medium text-destructive">
+                    {errors.responsable.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="monto">Monto</Label>
                 <Input
                   id="monto"
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={form.monto}
-                  onChange={(e) => setForm({ ...form, monto: e.target.value })}
+                  inputMode="decimal"
                   placeholder="0"
-                  required
+                  aria-invalid={errors.monto ? true : undefined}
+                  {...register("monto")}
                 />
+                {errors.monto && (
+                  <p className="text-sm font-medium text-destructive">
+                    {errors.monto.message}
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -407,8 +419,8 @@ export default function ProyectosPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
                   ? "Guardando..."
                   : editingProject
                     ? "Actualizar"
@@ -419,7 +431,10 @@ export default function ProyectosPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)}>
+      <Dialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Eliminar proyecto?</DialogTitle>

@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { RegisterValues, registerSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,13 +24,17 @@ import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, isAuthenticated } = useAuth();
-  const [nombre, setNombre] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [clave, setClave] = useState("");
-  const [confirmarClave, setConfirmarClave] = useState("");
+  const { register: registerUser, isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    mode: "onTouched",
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,20 +42,11 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, router]);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function onSubmit(values: RegisterValues) {
     setError(null);
 
-    if (clave !== confirmarClave) {
-      setError("Las contraseñas no coinciden");
-      toast.error("Las contraseñas no coinciden");
-      return;
-    }
-
-    setIsSubmitting(true);
-
     try {
-      await register(nombre, correo, clave);
+      await registerUser(values.nombre, values.correo, values.clave);
       toast.success("Cuenta creada. Inicia sesión para continuar.");
       router.replace("/login");
     } catch (err) {
@@ -56,8 +54,6 @@ export default function RegisterPage() {
         err instanceof ApiError ? err.message : "Error al crear la cuenta";
       setError(message);
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -70,7 +66,7 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -82,10 +78,14 @@ export default function RegisterPage() {
               id="nombre"
               type="text"
               placeholder="Tu nombre completo"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
+              aria-invalid={errors.nombre ? true : undefined}
+              {...register("nombre")}
             />
+            {errors.nombre && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.nombre.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="correo">Correo electrónico</Label>
@@ -93,10 +93,14 @@ export default function RegisterPage() {
               id="correo"
               type="email"
               placeholder="correo@ejemplo.com"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              required
+              aria-invalid={errors.correo ? true : undefined}
+              {...register("correo")}
             />
+            {errors.correo && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.correo.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="clave">Contraseña</Label>
@@ -104,11 +108,14 @@ export default function RegisterPage() {
               id="clave"
               type="password"
               placeholder="Mínimo 6 caracteres"
-              value={clave}
-              onChange={(e) => setClave(e.target.value)}
-              minLength={6}
-              required
+              aria-invalid={errors.clave ? true : undefined}
+              {...register("clave")}
             />
+            {errors.clave && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.clave.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmarClave">Confirmar contraseña</Label>
@@ -116,11 +123,14 @@ export default function RegisterPage() {
               id="confirmarClave"
               type="password"
               placeholder="Repite la contraseña"
-              value={confirmarClave}
-              onChange={(e) => setConfirmarClave(e.target.value)}
-              minLength={6}
-              required
+              aria-invalid={errors.confirmarClave ? true : undefined}
+              {...register("confirmarClave")}
             />
+            {errors.confirmarClave && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.confirmarClave.message}
+              </p>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Creando cuenta..." : "Registrarse"}

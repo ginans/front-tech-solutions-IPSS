@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { LoginValues, loginSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,10 +25,16 @@ import Link from "next/link";
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
-  const [correo, setCorreo] = useState("");
-  const [clave, setClave] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    mode: "onTouched",
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -33,13 +42,11 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function onSubmit(values: LoginValues) {
     setError(null);
-    setIsSubmitting(true);
 
     try {
-      await login(correo, clave);
+      await login(values.correo, values.clave);
       toast.success("Inicio de sesión exitoso");
       router.replace("/proyectos");
     } catch (err) {
@@ -47,8 +54,6 @@ export default function LoginPage() {
         err instanceof ApiError ? err.message : "Error al iniciar sesión";
       setError(message);
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -61,7 +66,7 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -73,10 +78,14 @@ export default function LoginPage() {
               id="correo"
               type="email"
               placeholder="correo@ejemplo.com"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              required
+              aria-invalid={errors.correo ? true : undefined}
+              {...register("correo")}
             />
+            {errors.correo && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.correo.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="clave">Contraseña</Label>
@@ -84,10 +93,14 @@ export default function LoginPage() {
               id="clave"
               type="password"
               placeholder="••••••••"
-              value={clave}
-              onChange={(e) => setClave(e.target.value)}
-              required
+              aria-invalid={errors.clave ? true : undefined}
+              {...register("clave")}
             />
+            {errors.clave && (
+              <p className="text-sm font-medium text-destructive">
+                {errors.clave.message}
+              </p>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
