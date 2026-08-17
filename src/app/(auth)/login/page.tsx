@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
+import { getErrorMessage } from "@/lib/http";
 import { LoginValues, loginSchema } from "@/lib/schemas";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
@@ -46,9 +46,7 @@ export default function LoginPage() {
       toast.success("Inicio de sesión exitoso");
       router.replace("/proyectos");
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Error al iniciar sesión";
-      toast.error(message);
+      toast.error(getErrorMessage(err));
     }
   }
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
+import { getErrorMessage } from "@/lib/http";
 import { RegisterValues, registerSchema } from "@/lib/schemas";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
@@ -19,13 +19,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register: registerUser, isAuthenticated } = useAuth();
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -43,17 +41,12 @@ export default function RegisterPage() {
   }, [isAuthenticated, router]);
 
   async function onSubmit(values: RegisterValues) {
-    setError(null);
-
     try {
       await registerUser(values.nombre, values.correo, values.clave);
       toast.success("Cuenta creada. Inicia sesión para continuar.");
       router.replace("/login");
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Error al crear la cuenta";
-      setError(message);
-      toast.error(message);
+      toast.error(getErrorMessage(err));
     }
   }
 
@@ -67,11 +60,6 @@ export default function RegisterPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <FormField id="nombre" label="Nombre" error={errors.nombre?.message}>
             <Input
               id="nombre"

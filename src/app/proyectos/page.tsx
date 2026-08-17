@@ -7,7 +7,8 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Pencil, Trash2, LogOut, FolderOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { ApiError, CreateProjectPayload, Project, projectsApi } from "@/lib/api";
+import { CreateProjectPayload, Project, projectsApi } from "@/lib/projects";
+import { getErrorMessage } from "@/lib/http";
 import { ESTADOS, ProjectValues, projectSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,11 +84,9 @@ export default function ProyectosPage() {
     setLoadingProjects(true);
     setError(null);
     try {
-      setProjects(await projectsApi.findAll(token));
+      setProjects(await projectsApi.findAll());
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Error al cargar proyectos",
-      );
+      setError(getErrorMessage(err));
     } finally {
       setLoadingProjects(false);
     }
@@ -139,17 +138,16 @@ export default function ProyectosPage() {
 
     try {
       if (editingProject) {
-        await projectsApi.update(token, editingProject.id, payload);
+        await projectsApi.update(editingProject.id, payload);
         toast.success("Proyecto actualizado");
       } else {
-        await projectsApi.create(token, payload);
+        await projectsApi.create(payload);
         toast.success("Proyecto creado");
       }
       setDialogOpen(false);
       loadProjects();
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Error al guardar el proyecto";
+      const message = getErrorMessage(err);
       setError(message);
       toast.error(message);
     }
@@ -161,13 +159,12 @@ export default function ProyectosPage() {
     setDeleting(true);
 
     try {
-      await projectsApi.remove(token, pendingDelete.id);
+      await projectsApi.remove(pendingDelete.id);
       toast.success("Proyecto eliminado");
       setPendingDelete(null);
       loadProjects();
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Error al eliminar el proyecto";
+      const message = getErrorMessage(err);
       toast.error(message);
     } finally {
       setDeleting(false);

@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { authApi } from "./api";
+import { authApi } from "./auth-api";
 import { tokenStorage } from "./auth-storage";
 
 interface AuthUser {
