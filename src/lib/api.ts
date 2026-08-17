@@ -42,8 +42,14 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
 
     if (response.status === 401) {
       if (typeof window !== "undefined") {
+        const hadSession = Boolean(localStorage.getItem("token"));
+
         localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem("user");
+
+        if (hadSession && window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
     }
 

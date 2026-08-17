@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,13 +19,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -43,8 +41,6 @@ export default function LoginPage() {
   }, [isAuthenticated, router]);
 
   async function onSubmit(values: LoginValues) {
-    setError(null);
-
     try {
       await login(values.correo, values.clave);
       toast.success("Inicio de sesión exitoso");
@@ -52,7 +48,6 @@ export default function LoginPage() {
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : "Error al iniciar sesión";
-      setError(message);
       toast.error(message);
     }
   }
@@ -67,11 +62,6 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <FormField id="correo" label="Correo electrónico" error={errors.correo?.message}>
             <Input
               id="correo"
