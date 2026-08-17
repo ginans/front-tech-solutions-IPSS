@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { LoginValues, loginSchema } from "@/lib/schemas";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { FormField } from "@/components/ui/form-field";
 import {
   Card,
   CardContent,
@@ -18,7 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -72,8 +72,7 @@ export default function LoginPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="correo">Correo electrónico</Label>
+          <FormField id="correo" label="Correo electrónico" error={errors.correo?.message}>
             <Input
               id="correo"
               type="email"
@@ -81,14 +80,8 @@ export default function LoginPage() {
               aria-invalid={errors.correo ? true : undefined}
               {...register("correo")}
             />
-            {errors.correo && (
-              <p className="text-sm font-medium text-destructive">
-                {errors.correo.message}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="clave">Contraseña</Label>
+          </FormField>
+          <FormField id="clave" label="Contraseña" error={errors.clave?.message}>
             <Input
               id="clave"
               type="password"
@@ -96,15 +89,10 @@ export default function LoginPage() {
               aria-invalid={errors.clave ? true : undefined}
               {...register("clave")}
             />
-            {errors.clave && (
-              <p className="text-sm font-medium text-destructive">
-                {errors.clave.message}
-              </p>
-            )}
-          </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
-          </Button>
+          </FormField>
+          <LoadingButton className="w-full" loading={isSubmitting} loadingText="Ingresando...">
+            Iniciar sesión
+          </LoadingButton>
         </form>
       </CardContent>
       <CardFooter className="justify-center text-sm text-muted-foreground">

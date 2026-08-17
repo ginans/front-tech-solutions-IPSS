@@ -34,7 +34,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -43,6 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormField } from "@/components/ui/form-field";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 const emptyForm: ProjectValues = {
   nombre: "",
@@ -329,86 +330,71 @@ export default function ProyectosPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input
-                id="nombre"
-                placeholder="Nombre del proyecto"
-                aria-invalid={errors.nombre ? true : undefined}
-                {...register("nombre")}
-              />
-              {errors.nombre && (
-                <p className="text-sm font-medium text-destructive">
-                  {errors.nombre.message}
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fechaInicio">Fecha de inicio</Label>
+            <div className="space-y-4">
+              <FormField id="nombre" label="Nombre" error={errors.nombre?.message}>
                 <Input
+                  id="nombre"
+                  placeholder="Nombre del proyecto"
+                  aria-invalid={errors.nombre ? true : undefined}
+                  {...register("nombre")}
+                />
+              </FormField>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
                   id="fechaInicio"
-                  type="date"
-                  aria-invalid={errors.fechaInicio ? true : undefined}
-                  {...register("fechaInicio")}
-                />
-                {errors.fechaInicio && (
-                  <p className="text-sm font-medium text-destructive">
-                    {errors.fechaInicio.message}
-                  </p>
-                )}
+                  label="Fecha de inicio"
+                  error={errors.fechaInicio?.message}
+                >
+                  <Input
+                    id="fechaInicio"
+                    type="date"
+                    aria-invalid={errors.fechaInicio ? true : undefined}
+                    {...register("fechaInicio")}
+                  />
+                </FormField>
+                <FormField id="estado" label="Estado">
+                  <Controller
+                    control={control}
+                    name="estado"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ESTADOS.map((estado) => (
+                            <SelectItem key={estado} value={estado}>
+                              {estado}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </FormField>
               </div>
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Controller
-                  control={control}
-                  name="estado"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ESTADOS.map((estado) => (
-                          <SelectItem key={estado} value={estado}>
-                            {estado}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="responsable">Responsable</Label>
-                <Input
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
                   id="responsable"
-                  placeholder="Nombre del responsable"
-                  aria-invalid={errors.responsable ? true : undefined}
-                  {...register("responsable")}
-                />
-                {errors.responsable && (
-                  <p className="text-sm font-medium text-destructive">
-                    {errors.responsable.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="monto">Monto</Label>
-                <Input
-                  id="monto"
-                  inputMode="decimal"
-                  placeholder="0"
-                  aria-invalid={errors.monto ? true : undefined}
-                  {...register("monto")}
-                />
-                {errors.monto && (
-                  <p className="text-sm font-medium text-destructive">
-                    {errors.monto.message}
-                  </p>
-                )}
+                  label="Responsable"
+                  error={errors.responsable?.message}
+                >
+                  <Input
+                    id="responsable"
+                    placeholder="Nombre del responsable"
+                    aria-invalid={errors.responsable ? true : undefined}
+                    {...register("responsable")}
+                  />
+                </FormField>
+                <FormField id="monto" label="Monto" error={errors.monto?.message}>
+                  <Input
+                    id="monto"
+                    inputMode="decimal"
+                    placeholder="0"
+                    aria-invalid={errors.monto ? true : undefined}
+                    {...register("monto")}
+                  />
+                </FormField>
               </div>
             </div>
             <DialogFooter>
@@ -419,13 +405,12 @@ export default function ProyectosPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Guardando..."
-                  : editingProject
-                    ? "Actualizar"
-                    : "Crear"}
-              </Button>
+              <LoadingButton
+                loading={isSubmitting}
+                loadingText="Guardando..."
+              >
+                {editingProject ? "Actualizar" : "Crear"}
+              </LoadingButton>
             </DialogFooter>
           </form>
         </DialogContent>
