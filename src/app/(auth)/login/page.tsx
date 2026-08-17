@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
@@ -27,9 +27,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (isAuthenticated) {
-    router.replace("/proyectos");
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/proyectos");
+    }
+  }, [isAuthenticated, router]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

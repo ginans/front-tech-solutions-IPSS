@@ -68,6 +68,8 @@ export default function ProyectosPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadProjects = useCallback(async () => {
     if (!token) return;
@@ -149,21 +151,22 @@ export default function ProyectosPage() {
     }
   }
 
-  async function handleDelete(project: Project) {
-    if (!token) return;
+  async function handleDelete() {
+    if (!token || !pendingDelete) return;
 
-    if (!window.confirm(`¿Eliminar el proyecto "${project.nombre}"?`)) {
-      return;
-    }
+    setDeleting(true);
 
     try {
-      await projectsApi.remove(token, project.id);
+      await projectsApi.remove(token, pendingDelete.id);
       toast.success("Proyecto eliminado");
+      setPendingDelete(null);
       loadProjects();
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : "Error al eliminar el proyecto";
       toast.error(message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -292,7 +295,7 @@ export default function ProyectosPage() {
                             size="icon"
                             aria-label={`Eliminar ${project.nombre}`}
                             className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(project)}
+                            onClick={() => setPendingDelete(project)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -413,6 +416,39 @@ export default function ProyectosPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar proyecto?</DialogTitle>
+            <DialogDescription>
+              Esta acción no se puede deshacer. Estás por eliminar el proyecto{" "}
+              <span className="font-medium text-foreground">
+                {pendingDelete?.nombre}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPendingDelete(null)}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
