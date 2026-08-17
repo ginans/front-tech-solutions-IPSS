@@ -1,36 +1,175 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tech Solutions — Frontend (Gestión de Proyectos)
 
-## Getting Started
+Aplicación web de gestión de proyectos para la empresa ficticia **Tech Solutions**, desarrollada con fines académicos para el **Instituto Profesional IPSS** como parte de la **Evaluación Sumativa de la Unidad Nº 2** de la asignatura **Desarrollo de Software Web I — Sección 51**.
 
-First, run the development server:
+| | |
+| :--- | :--- |
+| **Desarrolladora** | Gina Norambuena Sánchez |
+| **Docente** | Boris Belmar |
+| **Asignatura** | Desarrollo de Software Web I — Sección 51 |
+| **Institución** | Instituto Profesional IPSS |
+
+Este repositorio contiene el **frontend**. El backend (NestJS + MySQL + Prisma) se encuentra en `back-tech-solutions-IPSS`.
+
+---
+
+## Tabla de contenidos
+
+- [Características](#características)
+- [Tecnologías](#tecnologías)
+- [Requisitos](#requisitos)
+- [Puesta en marcha](#puesta-en-marcha)
+- [Variables de entorno](#variables-de-entorno)
+- [Arquitectura](#arquitectura)
+- [Justificación de tecnologías](#justificación-de-tecnologías)
+- [Capturas de pantalla](#capturas-de-pantalla)
+- [Vistas](#vistas)
+
+---
+
+## Características
+
+- Autenticación con **JWT**: registro e inicio de sesión de usuarios.
+- **Dashboard de proyectos** protegido por token (CRUD completo).
+- Validación de formularios **en tiempo real** (react-hook-form + zod).
+- Protección de rutas por **middleware** (server-side) y por contexto de autenticación (client-side).
+- Manejo centralizado de errores de la API con mensajes personalizados del backend.
+- Interfaz responsiva y accesible construida con shadcn/ui sobre Tailwind CSS 4.
+- Token gestionado en `localStorage` + cookie `auth_token` (para el middleware).
+
+## Tecnologías
+
+| Tecnología | Uso |
+| :--- | :--- |
+| **Next.js 15** (App Router) | Framework de React con enrutamiento por archivos y SSR/CSR |
+| **React 19** + **TypeScript** | UI declarativa con tipado estático |
+| **Tailwind CSS 4** | Estilos utilitarios con tokens de diseño |
+| **shadcn/ui** | Componentes accesibles y reutilizables |
+| **react-hook-form** | Gestión de formularios |
+| **zod** | Esquemas de validación |
+| **axios** | Cliente HTTP con interceptores |
+| **sonner** | Notificaciones (toasts) |
+| **lucide-react** | Iconografía |
+
+## Requisitos
+
+- **Node.js 20+** (Next.js 15 requiere Node 18.18.0 o superior).
+- **Backend en ejecución** en `http://localhost:3000` (ver `back-tech-solutions-IPSS`).
+
+## Puesta en marcha
 
 ```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Crear el archivo .env.local (ver sección siguiente)
+
+# 3. Levantar el servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicación queda disponible en **`http://localhost:3001`**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> **Nota:** si se cambia la variable de entorno `NEXT_PUBLIC_API_URL`, es necesario reiniciar el servidor de desarrollo (`rm -rf .next && npm run dev`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Comandos útiles
 
-## Learn More
+| Comando | Descripción |
+| :--- | :--- |
+| `npm run dev` | Servidor de desarrollo (Turbopack) |
+| `npm run build` | Compilación de producción |
+| `npm run start` | Ejecutar build de producción |
+| `npm run lint` | Análisis estático con ESLint |
 
-To learn more about Next.js, take a look at the following resources:
+## Variables de entorno
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Descripción | Valor por defecto |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_API_URL` | URL base del backend | `http://localhost:3000/api` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Arquitectura
 
-## Deploy on Vercel
+```
+src/
+├── app/                          # Enrutamiento (App Router)
+│   ├── (auth)/                   # Páginas públicas de autenticación
+│   │   ├── layout.tsx            #   Layout de login/registro
+│   │   ├── login/page.tsx        #   Inicio de sesión
+│   │   └── registro/page.tsx     #   Registro de usuario
+│   ├── proyectos/page.tsx        # Dashboard de proyectos (protegido)
+│   ├── layout.tsx                # Layout raíz (AuthProvider + toasts)
+│   ├── page.tsx                  # Redirige según el estado de sesión
+│   └── globals.css               # Tokens de diseño (paleta corporativa)
+├── components/
+│   ├── modals/                   # Diálogos reutilizables
+│   │   ├── confirm-dialog.tsx    #   Confirmación de acciones
+│   │   └── proyecto-dialog.tsx   #   Formulario crear/editar proyecto
+│   ├── tables/                   # Tablas reutilizables
+│   │   └── proyectos-table.tsx   #   Listado con acciones por fila
+│   └── ui/                       # Componentes base (shadcn/ui)
+├── lib/
+│   ├── http.ts                   # Cliente axios + interceptores (JWT, 401)
+│   ├── auth-api.ts               # Peticiones a /auth (login, registro)
+│   ├── projects.ts               # Peticiones a /proyectos (CRUD)
+│   ├── auth.tsx                  # Contexto de autenticación (AuthProvider)
+│   ├── auth-storage.ts           # Token: localStorage + cookie
+│   ├── schemas.ts                # Esquemas de validación (zod)
+│   ├── format.ts                 # Formato de fechas y moneda (es-CL)
+│   └── utils.ts                  # Utilidades (cn)
+└── middleware.ts                 # Protege /proyectos vía cookie JWT
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Flujo de autenticación
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. El usuario inicia sesión en `/login`; el backend valida las credenciales y retorna un **JWT**.
+2. El token se guarda en `localStorage` y como cookie `auth_token` (`auth-storage.ts`).
+3. El **middleware** (`middleware.ts`) valida la cookie en cada request a `/proyectos` y redirige a `/login` si no hay sesión.
+4. En el cliente, el **AuthProvider** (`auth.tsx`) expone el estado de sesión y actualiza el UI.
+5. Cada petición HTTP inyecta el token en el header `Authorization` mediante el interceptor de **axios** (`http.ts`).
+6. Si el backend responde **401**, el interceptor limpia la sesión y redirige a `/login`.
+
+### Flujo de datos
+
+```
+React (formulario) → zod (validación) → axios (API) → NestJS → Prisma → MySQL
+```
+
+## Justificación de tecnologías
+
+- **Next.js 15:** Framework de React de uso estándar en la industria. Se eligió la **versión 15** porque, además de ser moderna (App Router, Server Components, Turbopack), es una versión **más estable y consolidada** que la 16, recién publicada, lo que garantiza mayor compatibilidad de ecosistema (middleware, shadcn/ui, Tailwind) y menor riesgo de cambios rupturistas para este proyecto académico.
+- **TypeScript:** tipado estático que previene errores en tiempo de compilación y documenta el contrato de datos de la API (modelos `Project`, `User`, etc.).
+- **Tailwind CSS 4:** desarrollo de estilos con clases utilitarias y un sistema de **tokens de diseño** (variables CSS en `oklch`) que permiten mantener una **identidad corporativa** consistente en toda la interfaz.
+- **shadcn/ui:** componentes **accesibles, personalizables y reutilizables** basados en `@base-ui/react`. A diferencia de librerías cerradas, los componentes se copian al proyecto, por lo que pueden adaptarse a la paleta corporativa. Permite construir vistas **responsivas** (login, registro y dashboard) de forma rápida y consistente.
+- **zod + react-hook-form:** validación de formularios **en tiempo real** con esquemas tipados que además se comparten con los tipos de TypeScript, reduciendo validaciones duplicadas y mejorando la experiencia de usuario.
+- **axios:** cliente HTTP con **interceptores** que centralizan la inyección del token JWT y el manejo global de errores (401, mensajes del backend), evitando lógica repetida en cada petición.
+- **sonner:** notificaciones no intrusivas para mostrar errores y confirmaciones de forma clara.
+
+## Capturas de pantalla
+
+### Inicio de sesión
+
+![Vista de inicio de sesión](docs/screenshots/01-login.png)
+
+### Registro de usuario
+
+![Vista de registro](docs/screenshots/02-registro.png)
+
+### Dashboard de proyectos (protegido por JWT)
+
+![Dashboard de proyectos](docs/screenshots/03-proyectos.png)
+
+## Vistas
+
+| Ruta | Descripción | Acceso |
+| :--- | :--- | :--- |
+| `/` | Redirige a `/proyectos` o `/login` según sesión | Público |
+| `/login` | Inicio de sesión (retorna JWT) | Público |
+| `/registro` | Registro de usuario (clave cifrada en backend) | Público |
+| `/proyectos` | Dashboard de gestión de proyectos | **Protegido** (JWT) |
+
+**Credenciales de prueba** (usuario sembrado en la BD):
+
+```
+Correo: demo@techsolutions.cl
+Clave:  demo123456
+```
