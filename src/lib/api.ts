@@ -1,3 +1,5 @@
+import { tokenStorage } from "./auth-storage";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
 
 type ApiOptions = {
@@ -41,15 +43,11 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
       "Ha ocurrido un error en la solicitud";
 
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        const hadSession = Boolean(localStorage.getItem("token"));
+      const hadSession = tokenStorage.hasSession();
+      tokenStorage.clearSession();
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        if (hadSession && window.location.pathname !== "/login") {
-          window.location.href = "/login";
-        }
+      if (hadSession && window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
 

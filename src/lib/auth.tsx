@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { authApi } from "./api";
+import { tokenStorage } from "./auth-storage";
 
 interface AuthUser {
   id: number;
@@ -34,12 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    const storedToken = tokenStorage.getToken();
+    const storedUser = tokenStorage.getUser();
 
     if (storedToken && storedUser) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      setUser(storedUser);
     }
 
     setIsLoading(false);
@@ -49,8 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await authApi.login({ correo, clave });
     setToken(result.access_token);
     setUser(result.usuario);
-    localStorage.setItem("token", result.access_token);
-    localStorage.setItem("user", JSON.stringify(result.usuario));
+    tokenStorage.setSession(result.access_token, result.usuario);
   }, []);
 
   const register = useCallback(
@@ -63,8 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    tokenStorage.clearSession();
   }, []);
 
   const value = useMemo(
