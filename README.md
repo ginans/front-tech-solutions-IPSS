@@ -22,6 +22,7 @@ Este repositorio contiene el **frontend**. El backend (NestJS + MySQL + Prisma) 
 - [Variables de entorno](#variables-de-entorno)
 - [Arquitectura](#arquitectura)
 - [Justificación de tecnologías](#justificación-de-tecnologías)
+- [Capturas de pantalla](#capturas-de-pantalla)
 - [Vistas](#vistas)
 
 ---
@@ -142,6 +143,20 @@ React (formulario) → zod (validación) → axios (API) → NestJS → Prisma �
 - **zod + react-hook-form:** validación de formularios **en tiempo real** con esquemas tipados que además se comparten con los tipos de TypeScript, reduciendo validaciones duplicadas y mejorando la experiencia de usuario.
 - **axios:** cliente HTTP con **interceptores** que centralizan la inyección del token JWT y el manejo global de errores (401, mensajes del backend), evitando lógica repetida en cada petición.
 - **sonner:** notificaciones no intrusivas para mostrar errores y confirmaciones de forma clara.
+
+## Capturas de pantalla
+
+### Inicio de sesión
+
+![Vista de inicio de sesión](docs/screenshots/01-login.png)
+
+### Registro de usuario
+
+![Vista de registro](docs/screenshots/02-registro.png)
+
+### Dashboard de proyectos (protegido por JWT)
+
+![Dashboard de proyectos](docs/screenshots/03-proyectos.png)
 
 ## Vistas
 
